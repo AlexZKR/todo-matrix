@@ -344,6 +344,16 @@ body.is-dragging {
   line-height: 1;
 }
 
+.drop-indicator {
+  list-style: none;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--q, var(--accent));
+  margin: 0 4px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
 .drag-ghost {
   position: fixed;
   top: 0;

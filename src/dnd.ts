@@ -25,10 +25,16 @@ interface ActiveDrag extends PendingDrag {
   raf: number
 }
 
-export function initDragController(onDrop: (taskId: string, quadrant: QuadrantId) => void): void {
+export function initDragController(
+  onDrop: (taskId: string, quadrant: QuadrantId, beforeId: string | null) => void,
+): void {
   let pending: PendingDrag | null = null
   let active: ActiveDrag | null = null
   let dropTarget: HTMLElement | null = null
+  let beforeId: string | null = null
+
+  const indicator = document.createElement('li')
+  indicator.className = 'drop-indicator'
 
   document.addEventListener('pointerdown', (e) => {
     if (active || pending || e.button !== 0) return
@@ -62,8 +68,9 @@ export function initDragController(onDrop: (taskId: string, quadrant: QuadrantId
     if (active && e.pointerId === active.pointerId) {
       const quadrant = dropTarget?.dataset.quadrant as QuadrantId | undefined
       const taskId = active.taskId
+      const before = beforeId
       cleanup()
-      if (quadrant) onDrop(taskId, quadrant)
+      if (quadrant) onDrop(taskId, quadrant, before)
     }
     pending = null
   })
@@ -110,10 +117,31 @@ export function initDragController(onDrop: (taskId: string, quadrant: QuadrantId
 
   function updateDropTarget(x: number, y: number): void {
     const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('.quadrant') ?? null
-    if (el === dropTarget) return
-    dropTarget?.classList.remove('drop-target')
-    dropTarget = el
-    dropTarget?.classList.add('drop-target')
+    if (el !== dropTarget) {
+      dropTarget?.classList.remove('drop-target')
+      dropTarget = el
+      dropTarget?.classList.add('drop-target')
+    }
+    updateInsertionPoint(y)
+  }
+
+  // Place the indicator between the tasks whose midpoints straddle the pointer,
+  // and remember which task the drop should land in front of.
+  function updateInsertionPoint(y: number): void {
+    if (!dropTarget || !active) {
+      indicator.remove()
+      beforeId = null
+      return
+    }
+    const list = dropTarget.querySelector<HTMLElement>('[data-tasks]')!
+    const items = [...list.querySelectorAll<HTMLElement>(':scope > .task:not(.dragging)')]
+    const beforeEl = items.find((item) => {
+      const r = item.getBoundingClientRect()
+      return y < r.top + r.height / 2
+    })
+    beforeId = beforeEl?.dataset.id ?? null
+    if (beforeEl) list.insertBefore(indicator, beforeEl)
+    else list.append(indicator)
   }
 
   // Scroll the page while dragging near the viewport edges, so tasks can
@@ -140,7 +168,9 @@ export function initDragController(onDrop: (taskId: string, quadrant: QuadrantId
     active.source.classList.remove('dragging')
     document.body.classList.remove('is-dragging')
     dropTarget?.classList.remove('drop-target')
+    indicator.remove()
     dropTarget = null
+    beforeId = null
     active = null
   }
 }

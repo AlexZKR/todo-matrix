@@ -13,6 +13,7 @@ export interface Task {
   quadrant: QuadrantId
   done: boolean
   createdAt: number
+  order: number
 }
 
 export interface QuadrantMeta {

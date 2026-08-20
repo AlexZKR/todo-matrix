@@ -54,7 +54,7 @@ app.innerHTML = `
 `
 
 initTheme(document.querySelector<HTMLButtonElement>('#theme-toggle')!)
-initDragController((taskId, quadrant) => store.move(taskId, quadrant))
+initDragController((taskId, quadrant, beforeId) => store.move(taskId, quadrant, beforeId))
 
 const clearDoneBtn = document.querySelector<HTMLButtonElement>('#clear-done')!
 clearDoneBtn.addEventListener('click', () => store.clearCompleted())

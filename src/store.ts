@@ -32,9 +32,29 @@ function isTask(value: unknown): value is Task {
     typeof t.text === 'string' &&
     typeof t.done === 'boolean' &&
     typeof t.createdAt === 'number' &&
+    // order is backfilled for tasks saved before manual ordering existed
+    (typeof t.order === 'number' || t.order === undefined) &&
     typeof t.quadrant === 'string' &&
     QUADRANT_IDS.has(t.quadrant)
   )
+}
+
+function normalizeOrders(tasks: Task[]): void {
+  const groups = new Map<string, Task[]>()
+  for (const t of tasks) {
+    const key = `${t.boardId}\n${t.quadrant}`
+    const group = groups.get(key)
+    if (group) group.push(t)
+    else groups.set(key, [t])
+  }
+  for (const group of groups.values()) {
+    if (group.some((t) => typeof t.order !== 'number')) {
+      group.sort((a, b) => Number(a.done) - Number(b.done) || b.createdAt - a.createdAt)
+    } else {
+      group.sort((a, b) => a.order - b.order)
+    }
+    group.forEach((t, i) => (t.order = i))
+  }
 }
 
 function newBoard(name: string): Board {
@@ -56,6 +76,7 @@ function load(): State {
           typeof parsed.activeBoardId === 'string' && boardIds.has(parsed.activeBoardId)
             ? parsed.activeBoardId
             : boards[0].id
+        normalizeOrders(tasks)
         return { boards, tasks, activeBoardId }
       }
     }
@@ -80,6 +101,7 @@ function load(): State {
   } catch {
     // ignore unreadable legacy data
   }
+  normalizeOrders(tasks)
   return { boards: [board], tasks, activeBoardId: board.id }
 }
 
@@ -153,12 +175,13 @@ export class TaskStore {
   getByQuadrant(quadrant: QuadrantId): Task[] {
     return this.state.tasks
       .filter((t) => t.boardId === this.state.activeBoardId && t.quadrant === quadrant)
-      .sort((a, b) => Number(a.done) - Number(b.done) || b.createdAt - a.createdAt)
+      .sort((a, b) => a.order - b.order)
   }
 
   add(text: string, quadrant: QuadrantId): void {
     const trimmed = text.trim()
     if (!trimmed) return
+    const group = this.getByQuadrant(quadrant)
     this.state.tasks.push({
       id: crypto.randomUUID(),
       boardId: this.state.activeBoardId,
@@ -166,6 +189,7 @@ export class TaskStore {
       quadrant,
       done: false,
       createdAt: Date.now(),
+      order: (group[0]?.order ?? 1) - 1,
     })
     this.commit()
   }
@@ -177,10 +201,26 @@ export class TaskStore {
     this.commit()
   }
 
-  move(id: string, quadrant: QuadrantId): void {
+  /**
+   * Move a task into a quadrant at a specific position.
+   * `beforeId` is the task it should land in front of; null appends to the end.
+   * Works both across quadrants and for reordering within one.
+   */
+  move(id: string, quadrant: QuadrantId, beforeId: string | null = null): void {
     const task = this.state.tasks.find((t) => t.id === id)
-    if (!task || task.quadrant === quadrant) return
+    if (!task || beforeId === id) return
+
+    const target = this.state.tasks
+      .filter((t) => t.boardId === task.boardId && t.quadrant === quadrant && t.id !== id)
+      .sort((a, b) => a.order - b.order)
+
+    let index = beforeId ? target.findIndex((t) => t.id === beforeId) : target.length
+    if (index === -1) index = target.length
+    target.splice(index, 0, task)
+
+    if (task.quadrant === quadrant && target.every((t, i) => t.order === i)) return
     task.quadrant = quadrant
+    target.forEach((t, i) => (t.order = i))
     this.commit()
   }
 
