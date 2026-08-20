@@ -355,14 +355,7 @@ body.is-dragging {
   margin: 0;
   flex-shrink: 0;
   pointer-events: none;
-  transition: height 130ms ease;
   overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .drop-placeholder {
-    transition: none;
-  }
 }
 
 .drag-ghost {

@@ -7,6 +7,7 @@ import type { QuadrantId } from './types'
 const MOUSE_DRAG_THRESHOLD = 5
 const EDGE_SCROLL_ZONE = 70
 const EDGE_SCROLL_MAX_SPEED = 14
+const REORDER_ANIMATION_MS = 130
 
 interface PendingDrag {
   taskId: string
@@ -43,6 +44,8 @@ export function initDragController(
   // placeholder moved, the page would reflow under the pointer and the
   // drop target would oscillate.
   let lockedQuadrants: HTMLElement[] = []
+
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
 
   document.addEventListener('pointerdown', (e) => {
     if (active || pending || e.button !== 0) return
@@ -163,13 +166,45 @@ export function initDragController(
       (beforeEl ? placeholder.nextElementSibling === beforeEl : list.lastElementChild === placeholder)
     if (inPlace) return
 
+    relocatePlaceholder(list, beforeEl ?? null)
+  }
+
+  // FLIP: measure every affected card's on-screen position, move the slot,
+  // then glide each card from where it was to where it now belongs — so the
+  // old gap closes as smoothly as the new one opens.
+  function relocatePlaceholder(list: HTMLElement, beforeEl: HTMLElement | null): void {
+    const lists = new Set<HTMLElement>([list])
+    if (placeholder.parentElement) lists.add(placeholder.parentElement as HTMLElement)
+    const cards = [...lists].flatMap((l) => [
+      ...l.querySelectorAll<HTMLElement>(':scope > .task:not(.dragging)'),
+    ])
+    const previousTop = new Map(cards.map((c) => [c, c.getBoundingClientRect().top]))
+    for (const c of cards) {
+      c.style.transition = 'none'
+      c.style.transform = ''
+    }
+
     if (beforeEl) list.insertBefore(placeholder, beforeEl)
     else list.append(placeholder)
 
-    // Grow the slot from 0 so neighboring cards slide apart instead of jumping.
-    placeholder.style.height = '0px'
+    if (reducedMotion.matches) {
+      for (const c of cards) c.style.transition = ''
+      return
+    }
+    const moved: HTMLElement[] = []
+    for (const c of cards) {
+      const dy = (previousTop.get(c) ?? 0) - c.getBoundingClientRect().top
+      if (Math.abs(dy) > 0.5) {
+        c.style.transform = `translateY(${dy}px)`
+        moved.push(c)
+      }
+    }
+    if (moved.length === 0) return
     placeholder.getBoundingClientRect()
-    placeholder.style.height = `${active.sourceHeight}px`
+    for (const c of moved) {
+      c.style.transition = `transform ${REORDER_ANIMATION_MS}ms ease`
+      c.style.transform = ''
+    }
   }
 
   // Scroll the page while dragging near the viewport edges, so tasks can
@@ -197,7 +232,13 @@ export function initDragController(
     document.body.classList.remove('is-dragging')
     dropTarget?.classList.remove('drop-target')
     placeholder.remove()
-    for (const q of lockedQuadrants) q.style.height = ''
+    for (const q of lockedQuadrants) {
+      q.style.height = ''
+      for (const c of q.querySelectorAll<HTMLElement>('.task')) {
+        c.style.transform = ''
+        c.style.transition = ''
+      }
+    }
     lockedQuadrants = []
     dropTarget = null
     beforeId = null
