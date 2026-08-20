@@ -39,6 +39,11 @@ export function initDragController(
   const placeholder = document.createElement('li')
   placeholder.className = 'drop-placeholder'
 
+  // Quadrant heights are frozen while dragging: if they resized as the
+  // placeholder moved, the page would reflow under the pointer and the
+  // drop target would oscillate.
+  let lockedQuadrants: HTMLElement[] = []
+
   document.addEventListener('pointerdown', (e) => {
     if (active || pending || e.button !== 0) return
     const target = e.target as Element
@@ -96,6 +101,9 @@ export function initDragController(
     ghost.style.width = `${rect.width}px`
     document.body.append(ghost)
     document.body.classList.add('is-dragging')
+
+    lockedQuadrants = [...document.querySelectorAll<HTMLElement>('.quadrant')]
+    for (const q of lockedQuadrants) q.style.height = `${q.getBoundingClientRect().height}px`
 
     // The placeholder takes the card's slot in the list; the card itself is
     // hidden so only the ghost under the pointer represents it.
@@ -189,6 +197,8 @@ export function initDragController(
     document.body.classList.remove('is-dragging')
     dropTarget?.classList.remove('drop-target')
     placeholder.remove()
+    for (const q of lockedQuadrants) q.style.height = ''
+    lockedQuadrants = []
     dropTarget = null
     beforeId = null
     active = null
