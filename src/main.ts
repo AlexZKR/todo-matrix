@@ -82,6 +82,15 @@ function renderBoards(): void {
       name.title = board.id === store.activeBoardId ? 'Double-click to rename' : `Switch to ${board.name}`
       name.addEventListener('click', () => store.setActiveBoard(board.id))
       name.addEventListener('dblclick', () => startRename(chip, board.id, board.name))
+
+      const openCount = store.openCount(board.id)
+      if (openCount > 0) {
+        const badge = document.createElement('span')
+        badge.className = 'chip-count'
+        badge.textContent = String(openCount)
+        badge.ariaLabel = `${openCount} open task${openCount === 1 ? '' : 's'}`
+        name.append(badge)
+      }
       chip.append(name)
 
       if (board.id === store.activeBoardId) {

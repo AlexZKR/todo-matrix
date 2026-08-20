@@ -170,6 +170,10 @@ export class TaskStore {
     return this.state.tasks.filter((t) => t.boardId === boardId).length
   }
 
+  openCount(boardId: string): number {
+    return this.state.tasks.filter((t) => t.boardId === boardId && !t.done).length
+  }
+
   // --- tasks (scoped to the active board) ------------------------------------
 
   getByQuadrant(quadrant: QuadrantId): Task[] {
