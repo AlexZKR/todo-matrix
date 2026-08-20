@@ -99,12 +99,22 @@ function renderBoards(): void {
           del.className = 'chip-action chip-delete'
           del.textContent = '✕'
           del.ariaLabel = `Delete board ${board.name}`
+          // Two-step inline confirm — confirm() popups are blocked in
+          // sandboxed embeds, so the button itself asks before deleting.
           del.addEventListener('click', () => {
-            const count = store.taskCount(board.id)
-            const ok =
-              count === 0 ||
-              confirm(`Delete board “${board.name}” and its ${count} task${count === 1 ? '' : 's'}?`)
-            if (ok) store.removeBoard(board.id)
+            if (store.taskCount(board.id) > 0 && !del.classList.contains('armed')) {
+              del.classList.add('armed')
+              del.textContent = 'Sure?'
+              del.ariaLabel = `Confirm deleting board ${board.name} and its tasks`
+              setTimeout(() => {
+                if (!del.isConnected) return
+                del.classList.remove('armed')
+                del.textContent = '✕'
+                del.ariaLabel = `Delete board ${board.name}`
+              }, 3000)
+              return
+            }
+            store.removeBoard(board.id)
           })
           chip.append(del)
         }

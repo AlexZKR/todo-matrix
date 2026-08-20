@@ -196,6 +196,17 @@ body.is-dragging {
   color: var(--q-do);
 }
 
+.chip-delete.armed,
+.chip-delete.armed:hover {
+  width: auto;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--q-do);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
 .chip-rename {
   border: none;
   background: none;
