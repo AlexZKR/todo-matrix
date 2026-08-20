@@ -57,6 +57,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+body.is-dragging {
+  user-select: none;
+  cursor: grabbing;
+}
+
 #app {
   max-width: 1100px;
   margin: 0 auto;
@@ -73,7 +78,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 4px 0 16px;
+  padding: 4px 0 12px;
 }
 
 .topbar h1 {
@@ -109,6 +114,7 @@ body {
   width: 38px;
   height: 38px;
   font-size: 1.05rem;
+  flex-shrink: 0;
 }
 
 .ghost-btn {
@@ -119,6 +125,92 @@ body {
 .icon-btn:hover,
 .ghost-btn:hover {
   background: var(--surface-2);
+}
+
+/* --- boards bar -------------------------------------------------------------- */
+
+.boards {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 14px;
+}
+
+.board-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 2px;
+  margin: -2px;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.chip.active {
+  border-color: var(--accent);
+}
+
+.chip-name {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip.active .chip-name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.chip-action {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.chip-action:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.chip-delete:hover {
+  color: var(--q-do);
+}
+
+.chip-rename {
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  width: 130px;
+  outline: none;
+}
+
+.new-board-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* --- matrix grid ------------------------------------------------------------ */
@@ -230,15 +322,38 @@ body {
 .task {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 8px 10px 8px 6px;
   background: var(--surface-2);
   border-radius: 9px;
   cursor: grab;
 }
 
 .task.dragging {
-  opacity: 0.5;
+  opacity: 0.35;
+}
+
+.drag-handle {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 6px 4px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.92;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+  cursor: grabbing;
 }
 
 .task input[type='checkbox'] {
@@ -281,6 +396,23 @@ body {
   color: var(--q-do);
 }
 
+.more-btn {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  padding: 6px 8px;
+  margin: 0 8px 6px;
+  border-radius: 7px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.more-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
 /* --- add form ---------------------------------------------------------------- */
 
 .add-form {
@@ -318,51 +450,6 @@ body {
   cursor: pointer;
 }
 
-/* --- move menu ---------------------------------------------------------------- */
-
-.move-menu {
-  position: absolute;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  min-width: 150px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
-  padding: 4px;
-}
-
-.move-menu button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: none;
-  background: none;
-  color: var(--text);
-  font-size: 0.88rem;
-  text-align: left;
-  padding: 9px 10px;
-  border-radius: 7px;
-  cursor: pointer;
-}
-
-.move-menu button:hover {
-  background: var(--surface-2);
-}
-
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.dot-do { background: var(--q-do); }
-.dot-schedule { background: var(--q-schedule); }
-.dot-delegate { background: var(--q-delegate); }
-.dot-eliminate { background: var(--q-eliminate); }
-
 /* --- mobile ------------------------------------------------------------------- */
 
 @media (max-width: 720px) {
@@ -389,17 +476,48 @@ body {
     overflow-y: visible;
   }
 
-  .tasks:empty {
-    padding: 4px;
-  }
-
   .task-btn {
     padding: 8px;
+    font-size: 1rem;
+  }
+
+  .drag-handle {
+    padding: 10px 6px;
     font-size: 1rem;
   }
 
   .add-form input,
   .add-form button {
     min-height: 42px;
+  }
+
+  /* Empty quadrants shrink to a slim header so they don't crowd out
+     the ones with tasks; tapping the header opens the add form. */
+  .quadrant.empty .quadrant-head {
+    cursor: pointer;
+  }
+
+  .quadrant.empty:not(.expanded) .quadrant-head {
+    padding: 9px 14px;
+    border-bottom: none;
+  }
+
+  .quadrant.empty:not(.expanded) .quadrant-head::after {
+    content: '+';
+    color: var(--q);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1;
+    align-self: center;
+  }
+
+  .quadrant.empty:not(.expanded) .tasks,
+  .quadrant.empty:not(.expanded) .add-form,
+  .quadrant.empty:not(.expanded) .more-btn {
+    display: none;
+  }
+
+  .quadrant.empty.expanded .tasks {
+    display: none;
   }
 }

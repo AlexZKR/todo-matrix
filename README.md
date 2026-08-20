@@ -11,9 +11,12 @@ Fully client-side — all state lives in your browser's `localStorage`. No backe
 
 ## Features
 
-- Add tasks directly into any quadrant
-- Drag & drop tasks between quadrants (desktop), or use the ⇄ move menu (mobile-friendly)
-- Check tasks off, delete them, clear all completed at once
+- Add tasks directly into any quadrant — type, hit Enter, keep typing
+- Drag & drop between quadrants with mouse or touch: drag anywhere on a task (mouse) or from the ⠿ handle (touch), with edge auto-scroll while dragging
+- Multiple boards, one per day: new boards default to today's date as their name ("Aug 20"), and can be renamed (✎ or double-click), switched, and deleted
+- Check tasks off / uncheck them, delete them, clear all completed at once
+- Long lists collapse: quadrants show the first 5 tasks and hide the rest behind "Show N more"
+- On mobile, empty quadrants shrink to a slim header so they don't take space from filled ones — tap to expand and add
 - Dark theme: follows your OS preference, with a manual toggle that persists
 - Responsive: 2×2 grid on desktop, stacked list on mobile
 
