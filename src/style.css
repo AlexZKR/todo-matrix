@@ -329,8 +329,10 @@ body.is-dragging {
   cursor: grab;
 }
 
+/* While a card is dragged, the ghost under the pointer represents it and
+   the drop placeholder holds its slot — the original leaves the list. */
 .task.dragging {
-  opacity: 0.35;
+  display: none;
 }
 
 .drag-handle {
@@ -344,14 +346,23 @@ body.is-dragging {
   line-height: 1;
 }
 
-.drop-indicator {
+.drop-placeholder {
   list-style: none;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--q, var(--accent));
-  margin: 0 4px;
+  box-sizing: border-box;
+  border: 1.5px dashed var(--q, var(--accent));
+  border-radius: 9px;
+  opacity: 0.55;
+  margin: 0;
   flex-shrink: 0;
   pointer-events: none;
+  transition: height 130ms ease;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-placeholder {
+    transition: none;
+  }
 }
 
 .drag-ghost {
@@ -361,8 +372,8 @@ body.is-dragging {
   z-index: 100;
   margin: 0;
   pointer-events: none;
-  opacity: 0.92;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+  opacity: 0.75;
+  box-shadow: 0 10px 28px rgb(0 0 0 / 0.3);
   cursor: grabbing;
 }
 
@@ -472,6 +483,9 @@ body.is-dragging {
     grid-template-rows: none;
     grid-template-areas: 'do' 'schedule' 'delegate' 'eliminate';
     gap: 12px;
+    /* Rows at natural height — otherwise short content stretches to fill
+       the viewport and collapsed empty quadrants gain phantom space. */
+    align-content: start;
   }
 
   .axis {
@@ -491,9 +505,15 @@ body.is-dragging {
     font-size: 1rem;
   }
 
+  /* Thumbs reach the right edge more easily — put the drag handle there. */
   .drag-handle {
-    padding: 10px 6px;
+    order: 5;
+    padding: 10px 8px;
     font-size: 1rem;
+  }
+
+  .task {
+    padding: 8px 6px 8px 12px;
   }
 
   .add-form input,

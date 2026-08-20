@@ -18,6 +18,7 @@ interface PendingDrag {
 
 interface ActiveDrag extends PendingDrag {
   ghost: HTMLElement
+  sourceHeight: number
   grabDX: number
   grabDY: number
   lastX: number
@@ -33,8 +34,10 @@ export function initDragController(
   let dropTarget: HTMLElement | null = null
   let beforeId: string | null = null
 
-  const indicator = document.createElement('li')
-  indicator.className = 'drop-indicator'
+  // A card-sized slot that the surrounding tasks part around, showing
+  // exactly where the dragged card will land.
+  const placeholder = document.createElement('li')
+  placeholder.className = 'drop-placeholder'
 
   document.addEventListener('pointerdown', (e) => {
     if (active || pending || e.button !== 0) return
@@ -93,11 +96,17 @@ export function initDragController(
     ghost.style.width = `${rect.width}px`
     document.body.append(ghost)
     document.body.classList.add('is-dragging')
+
+    // The placeholder takes the card's slot in the list; the card itself is
+    // hidden so only the ghost under the pointer represents it.
+    placeholder.style.height = `${rect.height}px`
+    source.parentElement?.insertBefore(placeholder, source.nextSibling)
     source.classList.add('dragging')
 
     active = {
       ...pending,
       ghost,
+      sourceHeight: rect.height,
       grabDX: e.clientX - rect.left,
       grabDY: e.clientY - rect.top,
       lastX: e.clientX,
@@ -112,7 +121,7 @@ export function initDragController(
 
   function positionGhost(x: number, y: number): void {
     if (!active) return
-    active.ghost.style.transform = `translate(${x - active.grabDX}px, ${y - active.grabDY}px)`
+    active.ghost.style.transform = `translate(${x - active.grabDX}px, ${y - active.grabDY}px) rotate(2deg)`
   }
 
   function updateDropTarget(x: number, y: number): void {
@@ -125,11 +134,11 @@ export function initDragController(
     updateInsertionPoint(y)
   }
 
-  // Place the indicator between the tasks whose midpoints straddle the pointer,
+  // Place the slot between the tasks whose midpoints straddle the pointer,
   // and remember which task the drop should land in front of.
   function updateInsertionPoint(y: number): void {
     if (!dropTarget || !active) {
-      indicator.remove()
+      placeholder.remove()
       beforeId = null
       return
     }
@@ -140,8 +149,19 @@ export function initDragController(
       return y < r.top + r.height / 2
     })
     beforeId = beforeEl?.dataset.id ?? null
-    if (beforeEl) list.insertBefore(indicator, beforeEl)
-    else list.append(indicator)
+
+    const inPlace =
+      placeholder.parentElement === list &&
+      (beforeEl ? placeholder.nextElementSibling === beforeEl : list.lastElementChild === placeholder)
+    if (inPlace) return
+
+    if (beforeEl) list.insertBefore(placeholder, beforeEl)
+    else list.append(placeholder)
+
+    // Grow the slot from 0 so neighboring cards slide apart instead of jumping.
+    placeholder.style.height = '0px'
+    placeholder.getBoundingClientRect()
+    placeholder.style.height = `${active.sourceHeight}px`
   }
 
   // Scroll the page while dragging near the viewport edges, so tasks can
@@ -168,7 +188,7 @@ export function initDragController(
     active.source.classList.remove('dragging')
     document.body.classList.remove('is-dragging')
     dropTarget?.classList.remove('drop-target')
-    indicator.remove()
+    placeholder.remove()
     dropTarget = null
     beforeId = null
     active = null
