@@ -4,7 +4,10 @@ import { TaskStore } from './store'
 import { initTheme } from './theme'
 import { initDragController } from './dnd'
 
-const VISIBLE_TASK_LIMIT = 5
+// Long lists collapse behind "Show N more" — tighter on mobile where
+// vertical space is shared by all four stacked quadrants.
+const mobileLayout = matchMedia('(max-width: 720px)')
+const visibleTaskLimit = () => (mobileLayout.matches ? 4 : 5)
 
 const store = new TaskStore()
 const app = document.querySelector<HTMLDivElement>('#app')!
@@ -185,13 +188,13 @@ function render(): void {
     const quadrant = section.dataset.quadrant as QuadrantId
     const tasks = store.getByQuadrant(quadrant)
     const expanded = showAll.has(quadrant)
-    const visible = expanded ? tasks : tasks.slice(0, VISIBLE_TASK_LIMIT)
+    const visible = expanded ? tasks : tasks.slice(0, visibleTaskLimit())
 
     section.querySelector<HTMLUListElement>('[data-tasks]')!.replaceChildren(...visible.map(renderTask))
 
     const moreBtn = section.querySelector<HTMLButtonElement>('[data-more]')!
     const hiddenCount = tasks.length - visible.length
-    if (expanded && tasks.length > VISIBLE_TASK_LIMIT) {
+    if (expanded && tasks.length > visibleTaskLimit()) {
       moreBtn.hidden = false
       moreBtn.textContent = 'Show less ▴'
     } else if (hiddenCount > 0) {
@@ -211,6 +214,7 @@ function render(): void {
 }
 
 store.subscribe(render)
+mobileLayout.addEventListener('change', render)
 
 // --- interactions ---------------------------------------------------------------
 
