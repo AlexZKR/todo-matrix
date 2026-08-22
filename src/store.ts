@@ -1,4 +1,5 @@
 import type { Board, QuadrantId, Task } from './types'
+import { uid } from './uid'
 
 const STORAGE_KEY = 'todo-matrix.state.v2'
 const LEGACY_TASKS_KEY = 'todo-matrix.tasks.v1'
@@ -58,7 +59,7 @@ function normalizeOrders(tasks: Task[]): void {
 }
 
 function newBoard(name: string): Board {
-  return { id: crypto.randomUUID(), name, createdAt: Date.now() }
+  return { id: uid(), name, createdAt: Date.now() }
 }
 
 function load(): State {
@@ -187,7 +188,7 @@ export class TaskStore {
     if (!trimmed) return
     const group = this.getByQuadrant(quadrant)
     this.state.tasks.push({
-      id: crypto.randomUUID(),
+      id: uid(),
       boardId: this.state.activeBoardId,
       text: trimmed,
       quadrant,
