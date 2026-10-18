@@ -1,5 +1,7 @@
 # Todo Matrix
 
+This repo is part of the homelab on `hp-mediaserver`. See the [homelab repo](https://github.com/AlexZKR/homelab), the [homelab docs](https://github.com/AlexZKR/homelab/tree/main/docs) and the [docs site](http://192.168.1.10:3003). Host nginx serves the app on the LAN at `http://192.168.1.10/todo`. Tailnet devices use `http://hp-mediaserver/todo`. It is not on Funnel.
+
 An [Eisenhower matrix](https://en.wikipedia.org/wiki/Time_management#The_Eisenhower_Method) todo app: four quadrants sorted by urgency and importance.
 
 - **Do** — urgent & important
